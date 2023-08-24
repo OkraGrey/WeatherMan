@@ -1,5 +1,12 @@
 require 'csv'
 require 'optparse'
+
+
+option_parser = OptionParser.new do |opts|
+  opts.on '-e', '--include', 'Include protocol headers'
+  opts.on '-v', '--[no-]verbose', 'Make the operation more talkative'
+  opts.on '-m', '--message=MSG', 'Use the given message'
+end
 # CITY,YEAR,MONTH
 puts "#{ARGV.length}"
 

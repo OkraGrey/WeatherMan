@@ -1,6 +1,7 @@
 require 'optparse'
 require 'csv'
 require 'colorize'
+
 options = {}
 OptionParser.new do |opts|
   opts.on("-e YEAR,CITY", "--exact YEAR,CITY",Array, "Get weather data for a specific year and city (required)") do |year_city|
@@ -8,7 +9,9 @@ OptionParser.new do |opts|
       puts "Both year and city are required for the -e option."
       exit
     end
-    options[:exact] = year_city.split(',')
+    
+    # puts year_city
+    options[:exact] = year_city
   end
 
   opts.on("-d", "--double YEAR/MONTH,CITY", "Get highest and lowest weather in one row") do |year_month_city|
@@ -47,8 +50,58 @@ OptionParser.new do |opts|
 end.parse!
 
 if options[:exact]
-  city,year = options[:exact]
+  year,city = options[:exact]
   puts "Fetching weather data for #{city} in the year #{year}..."
+  months_array=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  master={}
+  tempH=-10000
+  tempL= 10000
+  humid=-10000
+  months_array.each_with_index do |month,index|
+    str = "#{city.capitalize}_weather\\#{city.capitalize}_weather_#{year}_#{month.capitalize}.txt"
+    # puts str
+  # str = "Dubai_weather\\Dubai_weather_2014_Oct.txt"
+    begin
+      CSV.foreach(str,headers:true) do |row|
+        if row["Max TemperatureC"].to_i>=tempH
+          tempH=row["Max TemperatureC"].to_i
+          master[:max]=row
+        end
+        if row["Min TemperatureC"].to_i<tempL
+          tempL=row["Min TemperatureC"].to_i
+          master[:low]=row
+        end
+        if row[" Mean Humidity"].to_f>humid
+          humid=row[" Mean Humidity"].to_f
+          master[:humid]=row
+        end
+      end
+    rescue
+      puts "Caught Error in index : #{index}"
+      return
+    end
+   
+  end
+  # puts master
+  puts "-"*50
+  begin
+    puts "Highest was #{master[:max]["Max TemperatureC"]}C on #{months_array[master[:max]["GST"].split('-')[1].to_i-1]} #{master[:max]["GST"].split('-')[2]}"
+  rescue
+    puts "Highest was #{master[:max]["Max TemperatureC"]}C on #{months_array[master[:max]["PKST"].split('-')[1].to_i-1]} #{master[:max]["PKST"].split('-')[2]}"
+  end
+  begin
+    puts "Lowest was #{master[:low]["Min TemperatureC"]}C on #{months_array[master[:low]["GST"].split('-')[1].to_i-1]} #{master[:low]["GST"].split('-')[2]}"
+  rescue  
+    puts "Lowest was #{master[:low]["Min TemperatureC"]}C on #{months_array[master[:low]["PKST"].split('-')[1].to_i-1]} #{master[:low]["PKST"].split('-')[2]}"
+  end
+  begin  
+    puts "Humidity: #{master[:humid][" Mean Humidity"]}% on #{months_array[master[:low]["GST"].split('-')[1].to_i-1]} #{master[:low]["GST"].split('-')[2]}"
+    puts "-"*50
+  rescue
+    puts "Humidity: #{master[:humid][" Mean Humidity"]}% on #{months_array[master[:low]["PKST"].split('-')[1].to_i-1]} #{master[:low]["PKST"].split('-')[2]}"
+    puts "-"*50
+  end
+
 elsif options[:average]
   # puts options[:average]
   #for a given month display the average highest temp, avg lowest temp, avg humidity
